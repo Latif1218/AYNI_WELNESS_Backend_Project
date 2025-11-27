@@ -7,7 +7,7 @@ This is a REST API for a AYNI_WELNESS service built for fun and learning with Fa
 ## ROUTES TO IMPLEMENT 
 | METHOD | ROUTE | FUNCTIONALITY |ACCESS|
 | ------- | ----- | ------------- | ------------- |
-| *POST* | ```/users``` | _Register new user_| _All users_|
+| *POST* | ```/Registers``` | _Register new user_| _All users_|
 | *POST* | ```/login``` | _Login user_|_All users_|
 | *POST* | ```/forgot_password``` | _forgot password_|_All users_|
 | *POST* | ```/verify-otp``` | _verify otp_|_All users_|
