@@ -11,3 +11,5 @@ email-validator
 sqlalchemy
 fastapi[standard]
 psycopg2
+httpx 
+urllib.parse

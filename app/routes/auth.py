@@ -6,6 +6,12 @@ from .. utils import hashing, jwt_handler, otp_sender, email_sender
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordRequestForm
+from ..config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, GOOGLE_AUTH_URL, GOOGLE_TOKEN_URL, GOOGLE_USERINFO_URL
+from urllib.parse import urlencode
+from fastapi.responses import RedirectResponse
+from fastapi import Request
+import httpx
+
 
 
 router = APIRouter(
@@ -107,6 +113,99 @@ def reset_password(email: str, payload: user_schema.ResetPassword, db: Session =
     db.commit()
 
     return {"message": "Password updated successfully"}
+
+
+
+
+@router.get("/google/login")
+def google_login():
+    
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    url = f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
+    return RedirectResponse(url)
+
+
+@router.get("/google/callback")
+async def google_callback(request: Request, db: Session = Depends(database.get_db)):
+    code = request.query_params.get("code")
+
+    if not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No code provided by Google"
+        )
+
+    async with httpx.AsyncClient() as client:
+        token_data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+
+        token_res = await client.post(GOOGLE_TOKEN_URL, data=token_data)
+        if token_res.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to retrieve access token from Google"
+            )
+
+        token_json = token_res.json()
+        access_token = token_json.get("access_token")
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+        userinfo_res = await client.get(GOOGLE_USERINFO_URL, headers=headers)
+        if userinfo_res.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to retrieve user info from Google"
+            )
+
+        userinfo = userinfo_res.json()
+
+    google_email = userinfo.get("email")
+    name = userinfo.get("name", "Google User")
+
+    if not google_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account has no email"
+        )
+
+    user = db.query(user_model.User).filter(
+        user_model.User.email == google_email
+    ).first()
+
+    if not user:
+        user = user_model.User(
+            name=name,
+            email=google_email,
+            password=hashing.hash_password("GOOGLE_AUTH_USER"),  # dummy/pass
+            is_verified=True
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    token = jwt_handler.create_access_token(
+        data={"user_id": user.id, "email": user.email}
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "email": user.email,
+        "name": user.name,
+        "login_provider": "google"
+    }
 
 
 
