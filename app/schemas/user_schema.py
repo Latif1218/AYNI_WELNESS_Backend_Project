@@ -63,3 +63,18 @@ class ForgotPassword(BaseModel):
     email: EmailStr
 
 # step 3.2
+
+
+# step 4.2
+
+class VerifyOtp(BaseModel):
+    email: EmailStr
+    otp: str
+
+# step 4.2
+
+
+# step 5.2
+
+class ResetPassword(BaseModel):
+    new_password: str

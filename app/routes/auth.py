@@ -2,7 +2,7 @@ from fastapi import HTTPException, status, Depends, APIRouter
 from .. import database
 from .. models import user_model
 from .. schemas import user_schema
-from .. utils import hashing, jwt_handler, otp_sender
+from .. utils import hashing, jwt_handler, otp_sender, email_sender
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordRequestForm
@@ -47,27 +47,66 @@ def forgot_password(payload: user_schema.ForgotPassword, db: Session = Depends(d
     otp = otp_sender.generate_otp()
     user.otp = otp
     db.commit()
-    return {"message": "OTP sent to email", "otp": otp}
+
+    try:
+        email_sender.send_otp_email(user.email, otp)
+
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Faild to send OTP email"
+        )
+
+    return {"message": "OTP sent to email"}
 
 
-# @router.post("/verify-otp")
-# def verify(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
-#     user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
-#     if user.otp != user_credentials.otp:
-#         return {"error": "Invalid OTP"}
-#     return {"message": "OTP verified"}
+@router.post("/verify-otp")
+def verify_otp(payload: user_schema.VerifyOtp, db: Session = Depends(database.get_db)):
+    user = db.query(user_model.User).filter(user_model.User.email==payload.email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    if not user.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No OTP set for this user"
+        )
+    if user.otp != payload.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP"
+        )
+    user.is_verified = True
+    user.otp = None
+    db.commit()
+    db.refresh(user)
+        
+    return {
+        "message": "OTP verified successfully",
+        "email":user.email,
+        "is_verified": user.is_verified
+    }
 
 
-# @router.post("/reset-password/{email}")
-# def reset(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
-#     user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
+@router.post("/reset-password/{email}")
+def reset_password(email: str, payload: user_schema.ResetPassword, db: Session = Depends(database.get_db)):
+    user = db.query(user_model.User).filter(user_model.User.email==email).first()
 
-#     hashed_password = hashing.hash_password(user.password)
-#     user.password =hashed_password
-#     user.otp = None
-#     db.commit()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
 
-#     return {"message": "Password updated"}
+    hashed_password = hashing.hash_password(payload.new_password)
+    user.password =hashed_password
+    user.otp = None
+    db.commit()
+
+    return {"message": "Password updated successfully"}
 
 
 
