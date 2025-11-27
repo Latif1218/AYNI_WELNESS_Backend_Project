@@ -54,3 +54,12 @@ class TokenData(BaseModel):
 
 
 # step 2.5
+
+
+
+# step 3.2
+
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+# step 3.2

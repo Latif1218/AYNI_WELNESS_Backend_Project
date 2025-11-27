@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status, Depends, APIRouter
 from .. import database
 from .. models import user_model
+from .. schemas import user_schema
 from .. utils import hashing, jwt_handler, otp_sender
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -35,9 +36,9 @@ def login(user_credentials : OAuth2PasswordRequestForm=Depends(), db:Session = D
 
 
 
-@router.post("/forgot-password")
-def forgot_password(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
+@router.post("/forgot_password")
+def forgot_password(payload: user_schema.ForgotPassword, db: Session = Depends(database.get_db)):
+    user = db.query(user_model.User).filter(user_model.User.email==payload.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -49,24 +50,24 @@ def forgot_password(user_credentials : OAuth2PasswordRequestForm=Depends(), db: 
     return {"message": "OTP sent to email", "otp": otp}
 
 
-@router.post("/verify-otp")
-def verify(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
-    if user.otp != user_credentials.otp:
-        return {"error": "Invalid OTP"}
-    return {"message": "OTP verified"}
+# @router.post("/verify-otp")
+# def verify(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
+#     user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
+#     if user.otp != user_credentials.otp:
+#         return {"error": "Invalid OTP"}
+#     return {"message": "OTP verified"}
 
 
-@router.post("/reset-password/{email}")
-def reset(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
+# @router.post("/reset-password/{email}")
+# def reset(user_credentials : OAuth2PasswordRequestForm=Depends(), db: Session = Depends(database.get_db)):
+#     user = db.query(user_model.User).filter(user_model.User.email==user_credentials.username).first()
 
-    hashed_password = hashing.hash_password(user.password)
-    user.password =hashed_password
-    user.otp = None
-    db.commit()
+#     hashed_password = hashing.hash_password(user.password)
+#     user.password =hashed_password
+#     user.otp = None
+#     db.commit()
 
-    return {"message": "Password updated"}
+#     return {"message": "Password updated"}
 
 
 
