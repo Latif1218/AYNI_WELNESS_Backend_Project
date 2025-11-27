@@ -51,8 +51,9 @@ engine=create_engine('postgresql://postgres:<username>:<password>@localhost/<db_
 - create routes/user.py
 - create routes/auth.py
 
-###  architecter
+## 📁 Project Structure
 
+```bash
 fastapi_auth_app/
 │
 ├── app/
@@ -76,8 +77,8 @@ fastapi_auth_app/
 │   └── utils/
 │       ├── hashing.py
 │       ├── jwt_handler.py
-│       ├── hashing.py
 │       ├── email_sender.py
 │       └── otp_sender.py
-├── aynenv
+├── aynenv/
 └── requirements.txt
+```
