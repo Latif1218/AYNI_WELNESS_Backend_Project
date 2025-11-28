@@ -1,8 +1,10 @@
 # step 1.2
 
+from fastapi import Depends
+from typing import Annotated
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:4321@localhost/ayni'
 
@@ -17,5 +19,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # step 1.2

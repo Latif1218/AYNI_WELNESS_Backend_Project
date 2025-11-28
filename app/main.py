@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 from . routes import user, auth
 from . database import Base, engine
+from fastapi.staticfiles import StaticFiles
 
 
 Base.metadata.create_all(bind=engine)

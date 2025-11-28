@@ -11,8 +11,6 @@ class UserCreate(BaseModel):
     password: str
 
 class UserRes(BaseModel):
-    first_name: str
-    last_name: str
     id: int
     email: EmailStr
     created_at : datetime
@@ -23,6 +21,22 @@ class UserRes(BaseModel):
 # step 1.4
 
 
+class User(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: EmailStr
+    disabled: bool 
+    created_at : datetime
+
+
+
+
+class UserInDB(User):
+    hashed_password: str
+
+
+
 
 
 # step 2.3
@@ -30,6 +44,9 @@ class UserRes(BaseModel):
 class Token(BaseModel):
     access_token : str
     token_type : str
+
+    class Config:
+        orm_mode = True
 
 # step 2.3
 

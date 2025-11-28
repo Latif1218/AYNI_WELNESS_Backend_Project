@@ -1,11 +1,13 @@
 # step 1.6
 
-from fastapi import HTTPException, status, Depends, APIRouter
+from fastapi import HTTPException, status, APIRouter,Depends
 from ..models import user_model 
 from ..schemas import user_schema
 from .. utils import hashing
 from sqlalchemy.orm import Session
+from typing import Annotated
 from .. database import get_db
+
 
 
 router = APIRouter(
@@ -13,7 +15,7 @@ router = APIRouter(
 )
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=user_schema.UserRes)
-def ayni_user(user: user_schema.UserCreate, db:Session=Depends(get_db)):
+def ayni_user(user: user_schema.UserCreate, db: Session = Depends(get_db)):
     if db.query(user_model.User).filter(user_model.User.email == user.email).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -29,3 +31,7 @@ def ayni_user(user: user_schema.UserCreate, db:Session=Depends(get_db)):
 
 
 # step 1.6
+
+
+
+
